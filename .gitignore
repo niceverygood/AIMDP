@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build
+.next/
+out/
+dist/
+build/
+*.egg-info/
+
+# Data & Models
+materials-ai/backend/data/uploads/
+materials-ai/backend/data/processed/
+materials-ai/backend/data/materials.db
+materials-ai/backend/ml/property_models/*.pt
+materials-ai/backend/ml/property_models/*.pth
+materials-ai/backend/ml/unimol/models/
+data/qm9/
+
+# Docker
+pgdata/
+redisdata/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test artifacts
+materials-ai/screenshots/
+materials-ai/test-*.mjs
+materials-ai/package.json
+materials-ai/package-lock.json
+materials-ai/node_modules/
