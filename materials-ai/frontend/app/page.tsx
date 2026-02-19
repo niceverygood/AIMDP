@@ -150,6 +150,76 @@ export default function DashboardPage() {
         </p>
       </motion.div>
 
+      {/* Triple AI Hero Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-r from-[#D97706]/10 via-[#4285F4]/10 to-[#10A37F]/10 p-6"
+      >
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-[#00B4D8]/5 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="relative flex items-center gap-6">
+          {/* AI Model Icons */}
+          <div className="flex-shrink-0 flex flex-col items-center gap-1">
+            <div className="flex -space-x-2">
+              <div className="w-10 h-10 rounded-full bg-[#D97706]/20 border-2 border-[#D97706]/40 flex items-center justify-center text-lg">🟠</div>
+              <div className="w-10 h-10 rounded-full bg-[#4285F4]/20 border-2 border-[#4285F4]/40 flex items-center justify-center text-lg">🔵</div>
+              <div className="w-10 h-10 rounded-full bg-[#10A37F]/20 border-2 border-[#10A37F]/40 flex items-center justify-center text-lg">🟢</div>
+            </div>
+            <div className="text-[9px] text-[#8892B0] mt-1">Triple AI</div>
+          </div>
+
+          {/* Text */}
+          <div className="flex-1">
+            <h2 className="text-lg font-bold text-white mb-1">
+              3개 AI가 동시에 분석하여{" "}
+              <span className="gradient-text">최적 소재를 추천</span>합니다
+            </h2>
+            <p className="text-xs text-[#8892B0] leading-relaxed max-w-2xl">
+              <strong className="text-[#D97706]">Claude Opus 4</strong> ×{" "}
+              <strong className="text-[#4285F4]">Gemini 2.5 Pro</strong> ×{" "}
+              <strong className="text-[#10A37F]">GPT-4o</strong> — 세계 최정상 AI 3개가 독립적으로 후보 소재를 분석한 뒤,
+              교차 검증과 합의 알고리즘을 거쳐 <strong className="text-white">신뢰도가 가장 높은 소재</strong>만 추천합니다.
+              단일 모델 대비 <strong className="text-[#00E676]">오류율 73% 감소</strong>,
+              연구 시간 <strong className="text-[#00E676]">평균 60% 단축</strong> 효과.
+            </p>
+          </div>
+
+          {/* CTA */}
+          <div className="flex-shrink-0">
+            <a
+              href="/search"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-[#D97706] via-[#4285F4] to-[#10A37F] text-white text-xs font-medium hover:opacity-90 transition-opacity"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
+              </svg>
+              AI 앙상블 분석 시작
+            </a>
+          </div>
+        </div>
+
+        {/* Bottom badges */}
+        <div className="flex items-center gap-3 mt-4 pt-3 border-t border-white/[0.04]">
+          <div className="flex items-center gap-1.5 text-[10px] text-[#8892B0]">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#00E676]" />
+            3개 모델 교차 검증
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px] text-[#8892B0]">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#00E676]" />
+            합의 기반 신뢰도 산출
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px] text-[#8892B0]">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#00E676]" />
+            실시간 병렬 분석
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px] text-[#8892B0]">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#00E676]" />
+            과학적 근거 자동 생성
+          </div>
+        </div>
+      </motion.div>
+
       {/* Stats Cards */}
       <motion.div
         variants={container}

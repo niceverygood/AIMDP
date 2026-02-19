@@ -13,6 +13,9 @@ import sqlite3
 import time
 from typing import Optional
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import numpy as np
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -452,6 +455,74 @@ def submit_feedback(result: ExperimentResult):
             "retrain_triggered": retrain,
         },
     }
+
+
+# --- AI Ensemble Analysis ---
+
+class AIAnalysisRequest(BaseModel):
+    smiles: Optional[str] = None
+    category: Optional[str] = None
+    min_thermal_stability: Optional[float] = None
+    min_bandgap: Optional[float] = None
+    min_dielectric: Optional[float] = None
+    target_application: Optional[str] = None
+    limit: int = Field(default=10, ge=1, le=20)
+
+
+@app.post("/api/ai/analyze")
+async def ai_analyze_materials(request: AIAnalysisRequest):
+    """
+    3개 AI 모델(Claude Opus 4, Gemini 2.5 Pro, GPT-4o) 앙상블 분석.
+    OpenRouter를 통해 병렬 호출 → 교차 검증 → 합의 기반 추천.
+    """
+    from app.services.ai_ensemble import analyze_materials
+
+    # Fetch candidates from DB
+    conn = get_db()
+    conditions = []
+    params = []
+
+    if request.category and request.category != "all":
+        conditions.append("LOWER(category) = LOWER(?)")
+        params.append(request.category)
+    if request.min_thermal_stability is not None:
+        conditions.append("thermal_stability >= ?")
+        params.append(request.min_thermal_stability)
+    if request.min_bandgap is not None:
+        conditions.append("bandgap >= ?")
+        params.append(request.min_bandgap)
+    if request.min_dielectric is not None:
+        conditions.append("dielectric_constant >= ?")
+        params.append(request.min_dielectric)
+
+    where = "WHERE " + " AND ".join(conditions) if conditions else ""
+    rows = conn.execute(
+        f"SELECT * FROM materials {where} ORDER BY thermal_stability DESC LIMIT ?",
+        (*params, request.limit),
+    ).fetchall()
+    conn.close()
+
+    if not rows:
+        return {"success": False, "error": "조건에 맞는 소재가 없습니다."}
+
+    candidates = []
+    for row in rows:
+        d = dict(row)
+        d.pop("embedding", None)
+        candidates.append(d)
+
+    requirements = {
+        "smiles": request.smiles,
+        "category": request.category,
+        "min_thermal_stability": request.min_thermal_stability,
+        "min_bandgap": request.min_bandgap,
+        "min_dielectric": request.min_dielectric,
+        "target_application": request.target_application,
+    }
+
+    result = await analyze_materials(candidates, requirements)
+
+    return {"success": True, "data": result}
 
 
 # --- Pipeline (simulated) ---

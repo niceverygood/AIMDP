@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { SearchFilters } from "@/components/SearchFilters";
 import { ResultCard } from "@/components/ResultCard";
 import { HelpTooltip } from "@/components/HelpTooltip";
+import { AIAnalysisPanel } from "@/components/AIAnalysisPanel";
 import type { SearchQuery, MaterialSearchResult } from "@/lib/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -26,6 +27,7 @@ export default function SearchPage() {
   const [queryTime, setQueryTime] = useState(42.5);
   const [totalResults, setTotalResults] = useState(DEMO_RESULTS.length);
   const [apiConnected, setApiConnected] = useState(false);
+  const [lastQuery, setLastQuery] = useState<SearchQuery>({});
 
   // Try to load from real API on mount
   useEffect(() => {
@@ -34,6 +36,7 @@ export default function SearchPage() {
 
   const handleSearch = useCallback(async (query: SearchQuery) => {
     setLoading(true);
+    setLastQuery(query);
 
     try {
       const controller = new AbortController();
@@ -143,6 +146,11 @@ export default function SearchPage() {
             </p>
           </div>
         </motion.div>
+
+        {/* AI Ensemble Analysis */}
+        <div className="mb-6 p-4 rounded-xl bg-[#0D1B2A] border border-white/[0.06]">
+          <AIAnalysisPanel searchQuery={lastQuery} />
+        </div>
 
         {/* Results Grid */}
         {loading ? (
