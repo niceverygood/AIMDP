@@ -1,7 +1,3 @@
 {
-  "buildCommand": "cd materials-ai/frontend && npm install && npm run build",
-  "outputDirectory": "materials-ai/frontend/.next",
-  "installCommand": "cd materials-ai/frontend && npm install",
-  "framework": "nextjs",
-  "rootDirectory": "materials-ai/frontend"
+  "framework": "nextjs"
 }
