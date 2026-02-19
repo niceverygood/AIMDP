@@ -65,24 +65,39 @@ export default function DashboardPage() {
   const [dbConnected, setDbConnected] = useState(false);
 
   useEffect(() => {
+    const DEMO_STATS: DashboardStats = {
+      total_materials: 104,
+      verified_materials: 28,
+      categories: {
+        "organic": 61,
+        "battery": 18,
+        "OLED": 14,
+        "semiconductor": 5,
+        "hard_coating": 3,
+        "display": 3,
+      },
+    };
+
     async function fetchStats() {
       try {
-        const res = await fetch(`${API_URL}/api/materials/stats`);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+        const res = await fetch(`${API_URL}/api/materials/stats`, {
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
         if (res.ok) {
           const data = await res.json();
           if (data.success) {
             setStats(data.data);
             setDbConnected(true);
+            return;
           }
         }
       } catch {
-        // API not available — show placeholder
-        setStats({
-          total_materials: 0,
-          verified_materials: 0,
-          categories: {},
-        });
+        // API not available
       }
+      setStats(DEMO_STATS);
     }
     fetchStats();
   }, []);
