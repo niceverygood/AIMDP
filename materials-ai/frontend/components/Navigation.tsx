@@ -28,8 +28,30 @@ const NAV_ITEMS = [
     ),
   },
   {
+    href: "/discover",
+    label: "AI 신소재 발굴",
+    helpTitle: "AI 신소재 발굴",
+    helpDesc: "3개 AI가 기존 데이터를 학습하여 새로운 분자 구조를 제안하고, 시뮬레이션으로 성능을 예측합니다.",
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456Z" />
+      </svg>
+    ),
+  },
+  {
+    href: "/data",
+    label: "연구 데이터",
+    helpTitle: "연구 데이터 관리",
+    helpDesc: "동진쎄미켐 연구 데이터를 업로드하여 AI가 학습할 수 있도록 합니다.",
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+      </svg>
+    ),
+  },
+  {
     href: "/pipeline",
-    label: "데이터 파이프라인",
+    label: "파이프라인",
     helpTitle: "데이터 파이프라인",
     helpDesc: "CSV, SDF 등의 원시 데이터를 AI 학습용으로 변환하는 6단계 자동화 과정입니다.",
     icon: (

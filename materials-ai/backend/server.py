@@ -6,10 +6,12 @@ This is the PoC version that actually works with real data.
 Run: python server.py
 """
 
+import io
 import json
 import math
 import os
 import sqlite3
+import tempfile
 import time
 from typing import Optional
 
@@ -17,7 +19,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import numpy as np
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
@@ -522,6 +524,261 @@ async def ai_analyze_materials(request: AIAnalysisRequest):
 
     result = await analyze_materials(candidates, requirements)
 
+    return {"success": True, "data": result}
+
+
+# --- Research Data Upload ---
+
+@app.post("/api/data/upload")
+async def upload_research_data(
+    file: UploadFile = File(...),
+    category: str = Form(default=""),
+    source: str = Form(default="dongjin_internal"),
+):
+    """
+    연구 데이터 파일 업로드 (CSV/Excel).
+    파일을 파싱하여 소재 DB에 자동 적재합니다.
+    """
+    if not file.filename:
+        raise HTTPException(400, "파일이 없습니다")
+
+    ext = file.filename.rsplit(".", 1)[-1].lower()
+    if ext not in ("csv", "xlsx", "xls", "tsv"):
+        raise HTTPException(400, f"지원하지 않는 형식: .{ext} (CSV, Excel만 지원)")
+
+    try:
+        import pandas as pd
+
+        content = await file.read()
+
+        if ext in ("xlsx", "xls"):
+            df = pd.read_excel(io.BytesIO(content))
+        elif ext == "tsv":
+            df = pd.read_csv(io.BytesIO(content), sep="\t")
+        else:
+            df = pd.read_csv(io.BytesIO(content))
+
+        # Auto-detect column names
+        col_map = {}
+        for col in df.columns:
+            cl = col.strip().lower()
+            if cl in ("smiles", "smi"): col_map[col] = "smiles"
+            elif cl in ("name", "이름", "소재명", "material"): col_map[col] = "name"
+            elif cl in ("category", "카테고리", "분류"): col_map[col] = "category"
+            elif "thermal" in cl or "td" == cl or "열안정" in cl: col_map[col] = "thermal_stability"
+            elif "dielectric" in cl or "유전" in cl or "dk" == cl: col_map[col] = "dielectric_constant"
+            elif "bandgap" in cl or "밴드갭" in cl or "eg" == cl: col_map[col] = "bandgap"
+            elif "solub" in cl or "용해" in cl: col_map[col] = "solubility"
+            elif "density" in cl or "밀도" in cl: col_map[col] = "density"
+
+        df = df.rename(columns=col_map)
+
+        if "smiles" not in df.columns:
+            raise HTTPException(400, "SMILES 컬럼을 찾을 수 없습니다. 'smiles' 또는 'SMILES' 컬럼이 필요합니다.")
+
+        # Process and insert
+        conn = get_db()
+        inserted = 0
+        skipped = 0
+
+        for _, row in df.iterrows():
+            smiles = str(row.get("smiles", "")).strip()
+            if not smiles or smiles == "nan":
+                skipped += 1
+                continue
+
+            # Compute features if RDKit available
+            features = {}
+            try:
+                from rdkit import Chem
+                from rdkit.Chem import Descriptors, AllChem
+                mol = Chem.MolFromSmiles(smiles)
+                if mol:
+                    smiles = Chem.MolToSmiles(mol)  # canonical
+                    features = {
+                        "molecular_weight": round(Descriptors.MolWt(mol), 2),
+                        "logp": round(Descriptors.MolLogP(mol), 3),
+                        "hbd": Descriptors.NumHDonors(mol),
+                        "hba": Descriptors.NumHAcceptors(mol),
+                        "tpsa": round(Descriptors.TPSA(mol), 2),
+                        "rotatable_bonds": Descriptors.NumRotatableBonds(mol),
+                        "aromatic_rings": Descriptors.NumAromaticRings(mol),
+                    }
+                    # Embedding
+                    fp = AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048)
+                    fp_arr = np.array(fp, dtype=np.float32)
+                    rng = np.random.RandomState(42)
+                    proj = rng.randn(2048, 768).astype(np.float32)
+                    proj /= np.linalg.norm(proj, axis=0, keepdims=True)
+                    emb = fp_arr @ proj
+                    norm = np.linalg.norm(emb)
+                    if norm > 0: emb = emb / norm
+                    features["embedding"] = json.dumps(emb.tolist())
+                else:
+                    skipped += 1
+                    continue
+            except ImportError:
+                features["embedding"] = "[]"
+
+            def get_val(col):
+                v = row.get(col)
+                if v is not None and str(v) != "nan":
+                    try: return float(v)
+                    except: return None
+                return None
+
+            conn.execute("""
+                INSERT INTO materials (name, smiles, category, molecular_weight, logp, hbd, hba, tpsa,
+                    rotatable_bonds, aromatic_rings, thermal_stability, dielectric_constant,
+                    bandgap, solubility, density, embedding, source, is_verified)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+            """, (
+                str(row.get("name", "")) if str(row.get("name", "")) != "nan" else None,
+                smiles,
+                category or (str(row.get("category", "")) if str(row.get("category", "")) != "nan" else None),
+                features.get("molecular_weight") or get_val("molecular_weight"),
+                features.get("logp"), features.get("hbd"), features.get("hba"), features.get("tpsa"),
+                features.get("rotatable_bonds"), features.get("aromatic_rings"),
+                get_val("thermal_stability"),
+                get_val("dielectric_constant"),
+                get_val("bandgap"),
+                get_val("solubility"),
+                get_val("density"),
+                features.get("embedding", "[]"),
+                source,
+            ))
+            inserted += 1
+
+        conn.commit()
+        total = conn.execute("SELECT COUNT(*) FROM materials").fetchone()[0]
+        conn.close()
+
+        return {
+            "success": True,
+            "data": {
+                "filename": file.filename,
+                "rows_total": len(df),
+                "inserted": inserted,
+                "skipped": skipped,
+                "total_in_db": total,
+            },
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"파일 처리 실패: {e}")
+
+
+@app.get("/api/data/summary")
+def data_summary():
+    """연구 데이터 현황 요약."""
+    conn = get_db()
+    total = conn.execute("SELECT COUNT(*) FROM materials").fetchone()[0]
+    by_source = conn.execute(
+        "SELECT source, COUNT(*) as cnt FROM materials GROUP BY source ORDER BY cnt DESC"
+    ).fetchall()
+    by_category = conn.execute(
+        "SELECT category, COUNT(*) as cnt FROM materials GROUP BY category ORDER BY cnt DESC"
+    ).fetchall()
+    verified = conn.execute("SELECT COUNT(*) FROM materials WHERE is_verified = 1").fetchone()[0]
+
+    # Property coverage
+    coverage = {}
+    for prop in ["thermal_stability", "dielectric_constant", "bandgap", "solubility", "density"]:
+        cnt = conn.execute(f"SELECT COUNT(*) FROM materials WHERE {prop} IS NOT NULL").fetchone()[0]
+        coverage[prop] = {"count": cnt, "ratio": round(cnt / total * 100, 1) if total > 0 else 0}
+
+    conn.close()
+    return {
+        "success": True,
+        "data": {
+            "total_materials": total,
+            "verified": verified,
+            "by_source": {r["source"] or "unknown": r["cnt"] for r in by_source},
+            "by_category": {r["category"] or "미분류": r["cnt"] for r in by_category},
+            "property_coverage": coverage,
+        },
+    }
+
+
+# --- AI Discovery (New Material Proposal) ---
+
+class DiscoveryRequest(BaseModel):
+    target_category: str = ""
+    target_properties: dict = Field(default_factory=dict)
+    constraints: str = ""
+    data_limit: int = Field(default=30, ge=5, le=100)
+
+
+@app.post("/api/ai/discover")
+async def ai_discover_materials(request: DiscoveryRequest):
+    """
+    3개 AI 모델이 기존 연구 데이터를 학습하여 새로운 신소재를 제안합니다.
+    """
+    from app.services.ai_discovery import discover_new_materials
+
+    conn = get_db()
+    if request.target_category and request.target_category != "all":
+        rows = conn.execute(
+            "SELECT * FROM materials WHERE LOWER(category) = LOWER(?) ORDER BY thermal_stability DESC LIMIT ?",
+            (request.target_category, request.data_limit),
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT * FROM materials ORDER BY is_verified DESC, thermal_stability DESC LIMIT ?",
+            (request.data_limit,),
+        ).fetchall()
+    conn.close()
+
+    materials = [dict(r) for r in rows]
+    for m in materials:
+        m.pop("embedding", None)
+
+    result = await discover_new_materials(
+        existing_materials=materials,
+        target_category=request.target_category,
+        target_properties=request.target_properties,
+        constraints=request.constraints,
+    )
+    return {"success": True, "data": result}
+
+
+# --- Simulation ---
+
+class SimulationRequest(BaseModel):
+    smiles: str
+    name: str = ""
+    category: str = ""
+
+
+@app.post("/api/ai/simulate")
+async def ai_simulate_material(request: SimulationRequest):
+    """
+    제안된 소재에 대해 3개 AI 모델이 시뮬레이션 예측을 수행합니다.
+    """
+    from app.services.ai_discovery import simulate_material
+
+    # Get some existing materials for comparison
+    conn = get_db()
+    if request.category:
+        rows = conn.execute(
+            "SELECT * FROM materials WHERE LOWER(category) = LOWER(?) LIMIT 10",
+            (request.category,),
+        ).fetchall()
+    else:
+        rows = conn.execute("SELECT * FROM materials WHERE is_verified = 1 LIMIT 10").fetchall()
+    conn.close()
+
+    existing = [dict(r) for r in rows]
+    for m in existing:
+        m.pop("embedding", None)
+
+    result = await simulate_material(
+        smiles=request.smiles,
+        name=request.name,
+        category=request.category,
+        existing_materials=existing,
+    )
     return {"success": True, "data": result}
 
 
