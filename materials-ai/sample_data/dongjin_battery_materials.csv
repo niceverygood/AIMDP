@@ -1,0 +1,21 @@
+SMILES,이름,카테고리,열안정성,유전율,밴드갭,용해도,밀도
+O=C1OCCO1,EC (에틸렌카보네이트),battery,248,89.8,6.7,0.90,1.32
+COC(=O)OC,DMC (디메틸카보네이트),battery,90,3.1,6.5,0.80,1.07
+CCOC(=O)OC,EMC (에틸메틸카보네이트),battery,107,2.9,6.4,0.70,1.01
+O=C1OCC(F)O1,FEC (플루오로에틸렌카보네이트),battery,212,78.4,5.9,0.85,1.45
+O=c1occo1,VC (비닐렌카보네이트),battery,162,126.0,5.5,0.90,1.36
+F[P-](F)(F)(F)(F)F.[Li+],LiPF6,battery,200,,,,1.50
+O=C1OC(=O)C(F)(F)O1,DFEC,battery,195,65.2,5.7,0.82,1.52
+CCCCOC(=O)OC,BMC,battery,115,2.7,6.3,0.65,0.99
+CC1COC(=O)O1,PC (프로필렌카보네이트),battery,240,64.9,6.6,0.88,1.20
+O=S(=O)(C(F)(F)F)N([Li])S(=O)(=O)C(F)(F)F,LiTFSI,battery,360,,,,1.33
+CCOC(=O)OCC,DEC (디에틸카보네이트),battery,126,2.8,6.3,0.60,0.98
+O=C(OCC)OCC,DEC-alt,battery,128,2.85,6.35,0.58,0.97
+CS(=O)(=O)C,DMS (디메틸설폰),battery,285,47.2,5.8,0.75,1.13
+O=S1(=O)CCCC1,SL (설포란),battery,287,43.4,5.6,0.78,1.26
+CCOP(=O)(OCC)OCC,TEP (트리에틸포스페이트),battery,215,13.2,6.8,0.50,1.07
+O=P(OC)(OC)OC,TMP (트리메틸포스페이트),battery,197,20.6,7.0,0.60,1.21
+CC#N,ACN (아세토니트릴),battery,82,37.5,7.5,0.95,0.78
+O=C(F)F,DFE,battery,105,15.3,6.1,0.72,1.18
+FC(F)OC(F)F,BTFE,battery,118,8.5,6.0,0.45,1.38
+O=C1OCCC1,GBL (감마부티로락톤),battery,204,39.1,6.2,0.85,1.13

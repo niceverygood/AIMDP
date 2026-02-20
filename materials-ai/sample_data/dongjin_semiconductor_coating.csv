@@ -1,0 +1,21 @@
+SMILES,이름,카테고리,열안정성,유전율,밴드갭,용해도,밀도
+O=c1oc(=O)c2cc3c(=O)oc(=O)c3cc12,PMDA (피로멜리트산이무수물),semiconductor,480,3.4,3.0,0.0001,1.42
+c1cc(CC2CO2)c(CC2CO2)cc1Cc1cc(CC2CO2)c(CC2CO2)cc1,SU-8 에폭시 모노머,semiconductor,300,3.2,3.8,0.01,1.19
+C1=CC2=CC=CC2=C1,BCB (벤조시클로부텐),semiconductor,350,2.65,4.0,0.005,1.05
+FC(F)=C(F)F,TFE (PTFE 모노머),semiconductor,327,2.1,6.0,0.0001,2.15
+CCO[Si](OCC)(OCC)OCC,TEOS,hard_coating,165,3.9,8.9,0.01,0.93
+CO[Si](OC)(OC)CCCOCC1CO1,GPTMS,hard_coating,200,3.5,7.0,0.02,1.07
+CO[Si](OC)(OC)CCCOC(=O)C(=C)C,TMSPM,hard_coating,220,3.2,6.5,0.01,1.04
+C=C(C)C(=O)OC,MMA (메틸메타크릴레이트),hard_coating,160,2.6,5.5,0.02,0.94
+CC(=O)OC=C,VA (비닐아세테이트),hard_coating,155,2.5,5.8,0.03,0.93
+C(CO)O,EG (에틸렌글리콜),hard_coating,197,37.7,8.0,0.95,1.11
+OCC(O)CO,Glycerol,hard_coating,290,42.5,7.5,0.90,1.26
+C=CC(=O)O,AA (아크릴산),hard_coating,141,6.2,5.2,0.85,1.05
+CC(O)(CC)CC,TEA-like,semiconductor,235,2.4,5.0,0.03,0.73
+O=[Si](O)O,SiO2-precursor,semiconductor,1713,3.9,9.0,0.0001,2.20
+CC(C)(C)OO,DTBP (디-tert-부틸퍼옥사이드),semiconductor,111,2.2,5.5,0.02,0.79
+CCCCCCCC/C=C\CCCCCCCC(=O)O,올레산,hard_coating,195,2.5,6.0,0.001,0.89
+C(=O)(O)C(=O)O,옥살산,semiconductor,190,8.5,7.2,0.80,1.65
+OC(=O)/C=C\C(O)=O,말레산,semiconductor,202,7.8,6.8,0.75,1.59
+O=C(O)c1ccccc1,벤조산,semiconductor,249,3.0,4.5,0.05,1.27
+OC(=O)c1ccc(O)cc1,p-히드록시벤조산,semiconductor,214,4.2,4.3,0.08,1.46
