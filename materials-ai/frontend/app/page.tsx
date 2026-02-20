@@ -18,8 +18,7 @@ import {
 } from "recharts";
 import { StatsCard } from "@/components/StatsCard";
 import { HelpTooltip } from "@/components/HelpTooltip";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { getMaterialStats } from "@/lib/db";
 
 const CATEGORY_COLORS = [
   "#00B4D8", "#00E676", "#7C4DFF", "#FF9100", "#FF5252",
@@ -80,22 +79,14 @@ export default function DashboardPage() {
 
     async function fetchStats() {
       try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 3000);
-        const res = await fetch(`${API_URL}/api/materials/stats`, {
-          signal: controller.signal,
-        });
-        clearTimeout(timeout);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success) {
-            setStats(data.data);
-            setDbConnected(true);
-            return;
-          }
+        const data = await getMaterialStats();
+        if (data.total_materials > 0) {
+          setStats(data);
+          setDbConnected(true);
+          return;
         }
       } catch {
-        // API not available
+        // Supabase not available
       }
       setStats(DEMO_STATS);
     }

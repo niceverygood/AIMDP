@@ -10,8 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { HelpTooltip } from "@/components/HelpTooltip";
-
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { getDataSummary } from "@/lib/db";
 
 interface DataSummary {
   total_materials: number;
@@ -45,12 +44,13 @@ export default function DataPage() {
 
   const fetchSummary = useCallback(async () => {
     try {
-      const r = await fetch(`${API}/api/data/summary`);
-      if (r.ok) {
-        const d = await r.json();
-        if (d.success) setSummary(d.data);
+      const data = await getDataSummary();
+      if (data.total_materials > 0) {
+        setSummary(data);
       }
-    } catch { /* API not available */ }
+    } catch (err) {
+      console.error("Data summary error:", err);
+    }
   }, []);
 
   useEffect(() => { fetchSummary(); }, [fetchSummary]);
@@ -68,9 +68,9 @@ export default function DataPage() {
     formData.append("source", "dongjin_internal");
 
     try {
-      const r = await fetch(`${API}/api/data/upload`, { method: "POST", body: formData });
+      const r = await fetch("/api/data/upload", { method: "POST", body: formData });
       const d = await r.json();
-      setUploadResult(d.success ? d.data : { error: d.detail || "업로드 실패" });
+      setUploadResult(d.success ? d.data : { error: d.error || "업로드 실패" });
       if (d.success) fetchSummary();
     } catch (err) {
       setUploadResult({ error: "서버 연결 실패" });

@@ -6,9 +6,8 @@ import { SearchFilters } from "@/components/SearchFilters";
 import { ResultCard } from "@/components/ResultCard";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { AIAnalysisPanel } from "@/components/AIAnalysisPanel";
+import { searchMaterials as searchDB } from "@/lib/db";
 import type { SearchQuery, MaterialSearchResult } from "@/lib/types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const DEMO_RESULTS: MaterialSearchResult[] = [
   { id: 1, name: "BPhen", smiles: "c1ccc(-c2ccnc3c2ccc2c(-c4ccccc4)ccnc23)cc1", category: "OLED", molecular_weight: 332.41, logp: 6.12, hbd: 0, hba: 2, tpsa: 25.78, rotatable_bonds: 2, aromatic_rings: 5, thermal_stability: 380, dielectric_constant: 3.2, bandgap: 3.5, solubility: 0.002, density: 1.25, source: "curated", is_verified: true, created_at: "", updated_at: "", similarity: 0, match_score: 0.85 },
@@ -37,34 +36,35 @@ export default function SearchPage() {
   const handleSearch = useCallback(async (query: SearchQuery) => {
     setLoading(true);
     setLastQuery(query);
+    const start = performance.now();
 
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 3000);
-      const res = await fetch(`${API_URL}/api/search`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...query, limit: query.limit || 30 }),
-        signal: controller.signal,
+      const { results: dbResults, total } = await searchDB({
+        category: query.category,
+        min_thermal: query.min_thermal_stability ?? undefined,
+        max_thermal: query.max_thermal_stability ?? undefined,
+        min_bandgap: query.min_bandgap ?? undefined,
+        max_bandgap: query.max_bandgap ?? undefined,
+        min_dielectric: query.min_dielectric ?? undefined,
+        max_dielectric: query.max_dielectric ?? undefined,
+        limit: 30,
       });
-      clearTimeout(timeout);
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.data) {
-          setResults(data.data.results);
-          setQueryTime(data.data.query_time_ms);
-          setTotalResults(data.data.total);
-          setApiConnected(true);
-          setLoading(false);
-          return;
-        }
+      const elapsed = performance.now() - start;
+
+      if (dbResults.length > 0) {
+        setResults(dbResults as MaterialSearchResult[]);
+        setQueryTime(Math.round(elapsed * 10) / 10);
+        setTotalResults(total);
+        setApiConnected(true);
+        setLoading(false);
+        return;
       }
-    } catch {
-      // API not available — use demo data with filtering
+    } catch (err) {
+      console.error("Supabase search error:", err);
     }
 
-    // Fallback: filter demo results client-side
+    // Fallback to demo data
     let filtered = [...DEMO_RESULTS];
     if (query.category && query.category !== "all") {
       filtered = filtered.filter((m) => m.category?.toLowerCase() === query.category!.toLowerCase());
@@ -72,18 +72,12 @@ export default function SearchPage() {
     if (query.min_thermal_stability != null) {
       filtered = filtered.filter((m) => (m.thermal_stability ?? 0) >= query.min_thermal_stability!);
     }
-    if (query.max_thermal_stability != null) {
-      filtered = filtered.filter((m) => (m.thermal_stability ?? 999) <= query.max_thermal_stability!);
-    }
     if (query.min_bandgap != null) {
       filtered = filtered.filter((m) => (m.bandgap ?? 0) >= query.min_bandgap!);
     }
-    if (query.max_bandgap != null) {
-      filtered = filtered.filter((m) => (m.bandgap ?? 999) <= query.max_bandgap!);
-    }
 
     setResults(filtered);
-    setQueryTime(Math.random() * 50 + 10);
+    setQueryTime(Math.round((performance.now() - start) * 10) / 10);
     setTotalResults(filtered.length);
     setLoading(false);
   }, []);
