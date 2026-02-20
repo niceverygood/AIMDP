@@ -33,6 +33,29 @@ const COL_MAP: Record<string, string> = {
   molecular_weight: "molecular_weight", "분자량": "molecular_weight",
 };
 
+// Built-in demo data — no file upload needed
+const DEMO_CSV = `SMILES,이름,카테고리,열안정성,유전율,밴드갭,용해도,밀도
+c1ccc(-c2ccnc3c2ccc2c(-c4ccccc4)ccnc23)cc1,BPhen,OLED,380,3.2,3.5,0.002,1.25
+c1ccc(-n2c(-c3cc(-c4nc5ccccc5[nH]4)cc(-c4nc5ccccc5[nH]4)c3)nc3ccccc32)cc1,TPBi,OLED,420,3.0,3.2,0.001,1.32
+c1ccc(-c2ccccn2)cc1,Ir(ppy)3-ligand,OLED,450,3.3,2.4,0.0003,1.68
+c1ccc(-n2c3ccccc3c3ccccc32)cc1,TCTA,OLED,395,3.1,3.4,0.001,1.30
+c1ccc2c(c1)[nH]c1ccccc12,CBP-core,OLED,365,2.9,3.6,0.001,1.18
+O=P(c1ccccc1)(c1ccccc1)c1ccccc1,DPEPO,OLED,350,3.8,4.1,0.003,1.28
+c1ccc2c(c1)c1ccccc1c1ccccc12,Fluoranthene,OLED,375,2.7,3.3,0.002,1.27
+c1ccc2[nH]c(-c3ccc(-c4nc5ccccc5[nH]4)cc3)nc2c1,BBI,OLED,410,3.05,3.25,0.0012,1.35
+c1ccc2oc3ccccc3c2c1,Dibenzofuran,OLED,330,2.8,3.9,0.004,1.17
+c1ccc(-c2ccc(-n3c4ccccc4c4ccccc43)cc2)cc1,pCzBPh,OLED,405,2.95,3.35,0.0008,1.29
+O=C1OCCO1,EC,battery,248,89.8,6.7,0.90,1.32
+COC(=O)OC,DMC,battery,90,3.1,6.5,0.80,1.07
+O=C1OCC(F)O1,FEC,battery,212,78.4,5.9,0.85,1.45
+O=c1occo1,VC,battery,162,126.0,5.5,0.90,1.36
+CC1COC(=O)O1,PC,battery,240,64.9,6.6,0.88,1.20
+CS(=O)(=O)C,DMS,battery,285,47.2,5.8,0.75,1.13
+O=S1(=O)CCCC1,Sulfolane,battery,287,43.4,5.6,0.78,1.26
+O=c1oc(=O)c2cc3c(=O)oc(=O)c3cc12,PMDA,semiconductor,480,3.4,3.0,0.0001,1.42
+CCO[Si](OCC)(OCC)OCC,TEOS,hard_coating,165,3.9,8.9,0.01,0.93
+CCCCCC1=CC=C(C#N)C=C1,5CB,display,168,11.0,4.2,0.001,1.02`;
+
 function parseCSV(text: string): Record<string, string>[] {
   const lines = text.trim().split("\n");
   if (lines.length < 2) return [];
@@ -50,6 +73,8 @@ export default function PipelinePage() {
   const [steps, setSteps] = useState<PipelineStepStatus[]>(INITIAL_STEPS);
   const [isRunning, setIsRunning] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [csvText, setCsvText] = useState<string | null>(null);
+  const [dataLabel, setDataLabel] = useState("");
   const [result, setResult] = useState<{ inserted: number; total: number } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -57,8 +82,15 @@ export default function PipelinePage() {
     setSteps((prev) => prev.map((s, i) => (i === index ? { ...s, ...update } : s)));
   };
 
+  const loadDemo = useCallback(() => {
+    setCsvText(DEMO_CSV);
+    setSelectedFile(null);
+    setDataLabel("내장 데모 데이터 (OLED 10건 + 배터리 7건 + 반도체/코팅 3건)");
+  }, []);
+
   const runPipeline = useCallback(async () => {
-    if (!selectedFile) return;
+    const inputText = csvText || (selectedFile ? await selectedFile.text() : null);
+    if (!inputText) return;
 
     setIsRunning(true);
     setResult(null);
@@ -69,8 +101,7 @@ export default function PipelinePage() {
     try {
       // ─── Step 1: 데이터 수집 (파일 읽기) ───
       updateStep(0, { status: "running" as PipelineStepStatusType, progress: 10 });
-      const text = await selectedFile.text();
-      const rawRecords = parseCSV(text);
+      const rawRecords = parseCSV(inputText);
       const totalRows = rawRecords.length;
 
       if (totalRows === 0) {
@@ -287,40 +318,62 @@ export default function PipelinePage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-xs text-[#8892B0]">CSV 파일 선택</Label>
+              {/* Demo Data Button */}
+              <Button
+                onClick={loadDemo}
+                disabled={isRunning}
+                variant="outline"
+                className="w-full border-[#00B4D8]/20 text-[#00B4D8] hover:bg-[#00B4D8]/10 text-xs"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375" />
+                </svg>
+                데모 데이터 불러오기 (20건)
+              </Button>
+
+              {/* Current data indicator */}
+              {(csvText || selectedFile) && (
+                <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
+                  className="p-3 rounded-lg bg-[#00B4D8]/5 border border-[#00B4D8]/20">
+                  <p className="text-[11px] text-[#00B4D8] font-medium">
+                    {selectedFile ? `파일: ${selectedFile.name}` : dataLabel}
+                  </p>
+                  <p className="text-[10px] text-[#8892B0] mt-0.5">파이프라인 시작을 누르면 실행됩니다</p>
+                </motion.div>
+              )}
+
+              {/* Or upload file */}
+              <div className="relative">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className="flex-1 h-px bg-white/[0.06]" />
+                  <span className="text-[10px] text-[#8892B0]">또는 직접 업로드</span>
+                  <div className="flex-1 h-px bg-white/[0.06]" />
+                </div>
                 <div className="relative">
                   <input
                     ref={fileRef}
                     type="file"
                     accept=".csv,.tsv"
-                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) {
+                        setSelectedFile(f);
+                        setCsvText(null);
+                        setDataLabel("");
+                      }
+                    }}
                     disabled={isRunning}
                     className="absolute inset-0 opacity-0 cursor-pointer z-10"
                   />
-                  <div className={`p-4 border-2 border-dashed rounded-xl text-center transition-colors ${
-                    selectedFile ? "border-[#00E676]/30 bg-[#00E676]/5" : "border-white/[0.08] hover:border-[#00B4D8]/30"
-                  }`}>
-                    {selectedFile ? (
-                      <div>
-                        <p className="text-xs text-[#00E676] font-medium">{selectedFile.name}</p>
-                        <p className="text-[10px] text-[#8892B0] mt-1">{(selectedFile.size / 1024).toFixed(1)} KB</p>
-                      </div>
-                    ) : (
-                      <div>
-                        <svg className="w-6 h-6 text-[#8892B0]/50 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
-                        </svg>
-                        <p className="text-[10px] text-[#8892B0]">클릭하여 CSV 파일 선택</p>
-                      </div>
-                    )}
+                  <div className="p-2.5 border border-dashed border-white/[0.06] rounded-lg text-center hover:border-[#00B4D8]/20 transition-colors cursor-pointer">
+                    <p className="text-[10px] text-[#8892B0]">CSV 파일 선택</p>
                   </div>
                 </div>
               </div>
 
               <Button
                 onClick={runPipeline}
-                disabled={isRunning || !selectedFile}
+                disabled={isRunning || (!selectedFile && !csvText)}
                 className="w-full bg-gradient-to-r from-[#00B4D8] to-[#0096C7] hover:from-[#0096C7] hover:to-[#0077B6] text-white font-medium"
               >
                 {isRunning ? (
