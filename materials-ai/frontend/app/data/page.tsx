@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { getDataSummary } from "@/lib/db";
+import { supabase } from "@/lib/supabase";
 
 interface DataSummary {
   total_materials: number;
@@ -39,6 +40,7 @@ const PROP_LABELS: Record<string, string> = {
 export default function DataPage() {
   const [summary, setSummary] = useState<DataSummary | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
   const [uploadResult, setUploadResult] = useState<Record<string, unknown> | null>(null);
   const [category, setCategory] = useState("");
 
@@ -119,6 +121,69 @@ export default function DataPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Demo Data Button */}
+            <Button
+              onClick={async () => {
+                setDemoLoading(true);
+                setUploadResult(null);
+                try {
+                  const demoData = [
+                    { name: "BPhen", smiles: "c1ccc(-c2ccnc3c2ccc2c(-c4ccccc4)ccnc23)cc1", category: "OLED", thermal_stability: 380, dielectric_constant: 3.2, bandgap: 3.5, solubility: 0.002, density: 1.25, source: "demo", is_verified: true },
+                    { name: "TPBi", smiles: "c1ccc(-n2c(-c3cc(-c4nc5ccccc5[nH]4)cc(-c4nc5ccccc5[nH]4)c3)nc3ccccc32)cc1", category: "OLED", thermal_stability: 420, dielectric_constant: 3.0, bandgap: 3.2, solubility: 0.001, density: 1.32, source: "demo", is_verified: true },
+                    { name: "Ir(ppy)3", smiles: "c1ccc(-c2ccccn2)cc1", category: "OLED", thermal_stability: 450, dielectric_constant: 3.3, bandgap: 2.4, solubility: 0.0003, density: 1.68, source: "demo", is_verified: true },
+                    { name: "TCTA", smiles: "c1ccc(-n2c3ccccc3c3ccccc32)cc1", category: "OLED", thermal_stability: 395, dielectric_constant: 3.1, bandgap: 3.4, solubility: 0.001, density: 1.30, source: "demo", is_verified: true },
+                    { name: "DPEPO", smiles: "O=P(c1ccccc1)(c1ccccc1)c1ccccc1", category: "OLED", thermal_stability: 350, dielectric_constant: 3.8, bandgap: 4.1, solubility: 0.003, density: 1.28, source: "demo", is_verified: true },
+                    { name: "EC", smiles: "O=C1OCCO1", category: "battery", thermal_stability: 248, dielectric_constant: 89.8, bandgap: 6.7, solubility: 0.9, density: 1.32, source: "demo", is_verified: true },
+                    { name: "FEC", smiles: "O=C1OCC(F)O1", category: "battery", thermal_stability: 212, dielectric_constant: 78.4, bandgap: 5.9, solubility: 0.85, density: 1.45, source: "demo", is_verified: true },
+                    { name: "VC", smiles: "O=c1occo1", category: "battery", thermal_stability: 162, dielectric_constant: 126.0, bandgap: 5.5, solubility: 0.9, density: 1.36, source: "demo", is_verified: true },
+                    { name: "LiTFSI", smiles: "O=S(=O)(C(F)(F)F)N([Li])S(=O)(=O)C(F)(F)F", category: "battery", thermal_stability: 360, solubility: 0.95, density: 1.33, source: "demo", is_verified: true },
+                    { name: "PMDA", smiles: "O=c1oc(=O)c2cc3c(=O)oc(=O)c3cc12", category: "semiconductor", thermal_stability: 480, dielectric_constant: 3.4, bandgap: 3.0, solubility: 0.0001, density: 1.42, source: "demo", is_verified: true },
+                    { name: "TEOS", smiles: "CCO[Si](OCC)(OCC)OCC", category: "hard_coating", thermal_stability: 165, dielectric_constant: 3.9, bandgap: 8.9, solubility: 0.01, density: 0.93, source: "demo", is_verified: true },
+                    { name: "5CB", smiles: "CCCCCC1=CC=C(C#N)C=C1", category: "display", thermal_stability: 168, dielectric_constant: 11.0, bandgap: 4.2, solubility: 0.001, density: 1.02, source: "demo", is_verified: true },
+                    { name: "Caffeine", smiles: "Cn1c(=O)c2c(ncn2C)n(C)c1=O", category: "organic", thermal_stability: 236, dielectric_constant: 4.5, bandgap: 4.8, solubility: 0.64, density: 1.23, source: "demo", is_verified: false },
+                    { name: "Carbazole", smiles: "c1ccc2c(c1)[nH]c1ccccc12", category: "organic", thermal_stability: 340, dielectric_constant: 2.9, bandgap: 3.6, solubility: 0.15, density: 1.30, source: "demo", is_verified: false },
+                    { name: "Naphthalene", smiles: "c1ccc2ccccc2c1", category: "organic", thermal_stability: 250, dielectric_constant: 2.5, bandgap: 3.6, solubility: 0.35, density: 1.14, source: "demo", is_verified: false },
+                  ];
+
+                  const { data, error } = await supabase.from("materials").insert(demoData).select("id");
+                  if (error) {
+                    setUploadResult({ error: error.message });
+                  } else {
+                    const { count } = await supabase.from("materials").select("*", { count: "exact", head: true });
+                    setUploadResult({ filename: "데모 데이터", inserted: data?.length || 0, rows_total: demoData.length, total_in_db: count || 0 });
+                    fetchSummary();
+                  }
+                } catch (err) {
+                  setUploadResult({ error: String(err) });
+                } finally {
+                  setDemoLoading(false);
+                }
+              }}
+              disabled={uploading || demoLoading}
+              variant="outline"
+              className="w-full border-[#00B4D8]/20 text-[#00B4D8] hover:bg-[#00B4D8]/10 text-xs"
+            >
+              {demoLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-3.5 h-3.5 border-2 border-[#00B4D8] border-t-transparent rounded-full animate-spin" />
+                  저장 중...
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375" />
+                  </svg>
+                  데모 데이터 불러오기 (15건)
+                </div>
+              )}
+            </Button>
+
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-px bg-white/[0.06]" />
+              <span className="text-[10px] text-[#8892B0]">또는 직접 업로드</span>
+              <div className="flex-1 h-px bg-white/[0.06]" />
+            </div>
+
             <div className="space-y-2">
               <Label className="text-xs text-[#8892B0]">소재 카테고리</Label>
               <Select value={category} onValueChange={setCategory}>
