@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Use relative path → Next.js API routes (works on Vercel without backend)
+const API = "";
 
 interface Proposal {
   name: string;

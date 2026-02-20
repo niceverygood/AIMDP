@@ -48,3 +48,4 @@ materials-ai/test-*.mjs
 materials-ai/package.json
 materials-ai/package-lock.json
 materials-ai/node_modules/
+materials-ai/~$*
