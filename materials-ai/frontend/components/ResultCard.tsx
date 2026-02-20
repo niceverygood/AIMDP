@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PropertyRadar } from "./PropertyRadar";
+import { FeedbackPanel } from "./FeedbackPanel";
 import type { MaterialSearchResult } from "@/lib/types";
 
 interface ResultCardProps {
@@ -149,6 +150,20 @@ export function ResultCard({ material, rank }: ResultCardProps) {
             color="#8892B0"
           />
         </div>
+
+        {/* Researcher Feedback */}
+        <FeedbackPanel
+          materialName={material.name || `Material #${material.id}`}
+          materialSmiles={material.smiles}
+          category={material.category || undefined}
+          predictedProps={{
+            thermal_stability: material.thermal_stability,
+            dielectric_constant: material.dielectric_constant,
+            bandgap: material.bandgap,
+            solubility: material.solubility,
+            density: material.density,
+          }}
+        />
       </CardContent>
     </Card>
   );

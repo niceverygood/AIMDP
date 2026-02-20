@@ -10,8 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FeedbackPanel, FeedbackHistory, getFeedbackForAI } from "@/components/FeedbackPanel";
 
-// Use relative path → Next.js API routes (works on Vercel without backend)
 const API = "";
 
 interface Proposal {
@@ -78,13 +78,16 @@ export default function DiscoverPage() {
     setDiscovering(true);
     setProposals([]);
     try {
+      // Fetch past researcher feedback to include in AI prompt
+      const feedbackContext = await getFeedbackForAI(category !== "all" ? category : undefined);
+
       const r = await fetch(`${API}/api/ai/discover`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           target_category: category,
           target_properties: {},
-          constraints,
+          constraints: constraints + (feedbackContext ? `\n\n[연구원 피드백 데이터]\n${feedbackContext}` : ""),
           data_limit: 30,
         }),
       });
@@ -367,10 +370,23 @@ export default function DiscoverPage() {
                         </motion.div>
                       )}
                     </AnimatePresence>
+
+                    {/* Researcher Feedback */}
+                    <FeedbackPanel
+                      materialName={p.name}
+                      materialSmiles={p.smiles}
+                      category={category}
+                      predictedProps={p.predicted_properties as Record<string, number | null>}
+                    />
                   </CardContent>
                 </Card>
               );
             })}
+          </div>
+
+          {/* Feedback History */}
+          <div className="mt-8 p-5 rounded-xl bg-[#0D1B2A] border border-white/[0.06]">
+            <FeedbackHistory category={category !== "all" ? category : undefined} limit={10} />
           </div>
         </motion.div>
       )}
